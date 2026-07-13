@@ -49,6 +49,7 @@ class UploadResult:
     files_count: int
     total_size: int
     file_names: List[str]
+    file_infos: List[dict]  # [{"name": str, "size": int}, ...]
 
 
 def _human_size(n: int) -> str:
@@ -78,6 +79,7 @@ async def _process_upload(
 
     total_size = 0
     saved: List[dict] = []
+    file_infos: List[dict] = []
     file_names: List[str] = []
     created_paths: List[str] = []
 
@@ -132,6 +134,7 @@ async def _process_upload(
             created_paths.append(stored_path)
             total_size += size
             file_names.append(original)
+            file_infos.append({"name": original, "size": size})
 
             db.add(
                 File(
@@ -169,6 +172,7 @@ async def _process_upload(
         files_count=len(saved),
         total_size=total_size,
         file_names=file_names,
+        file_infos=file_infos,
     )
 
 
@@ -324,8 +328,6 @@ async def upload_json(
         "link_id": result.link_id,
         "url": result.url,
         "has_password": result.has_password,
-        "files": [
-            {"name": name, "size": 0} for name in result.file_names
-        ],
+        "files": result.file_infos,
         "total_size": result.total_size,
     }

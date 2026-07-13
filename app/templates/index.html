@@ -190,6 +190,29 @@
                 <span data-i18n="upload.generate">Создать ссылку</span>
             </span>
         </button>
+
+        {# Progress bar — hidden until upload starts #}
+        <div id="progress-container" class="hidden space-y-2">
+            <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span id="progress-percent">0%</span>
+                <span id="progress-size"></span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div id="progress-bar"
+                     class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-200 ease-out"
+                     style="width: 0%"></div>
+            </div>
+        </div>
+
+        {# Client-side upload error (shown when XHR fails) #}
+        <div id="upload-error" class="hidden mt-4 flex items-start gap-3 p-3.5
+                    bg-rose-50 dark:bg-rose-950/30
+                    border border-rose-200 dark:border-rose-900/50 rounded-xl" role="alert">
+            <svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="text-sm text-rose-800 dark:text-rose-200" id="upload-error-text"></p>
+        </div>
     </form>
 
     {% if upload_error %}
@@ -210,19 +233,27 @@
 {% if not show_login %}
 <script>
 (() => {
-    const form      = document.getElementById('upload-form');
-    const dropzone   = document.getElementById('dropzone');
-    const fileInput  = document.getElementById('files');
-    const fileList   = document.getElementById('file-list');
-    const submitBtn  = document.getElementById('submit-btn');
-    const submitLabel = document.getElementById('submit-label');
+    const form          = document.getElementById('upload-form');
+    const dropzone      = document.getElementById('dropzone');
+    const fileInput     = document.getElementById('files');
+    const fileList      = document.getElementById('file-list');
+    const submitBtn     = document.getElementById('submit-btn');
+    const submitLabel   = document.getElementById('submit-label');
+    const progressCont  = document.getElementById('progress-container');
+    const progressBar   = document.getElementById('progress-bar');
+    const progressPct   = document.getElementById('progress-percent');
+    const progressSize  = document.getElementById('progress-size');
+    const uploadError   = document.getElementById('upload-error');
+    const uploadErrorTxt = document.getElementById('upload-error-text');
+
+    let originalSubmitHtml = submitLabel.innerHTML;
 
     function humanSize(n) {
         return window.I18N ? window.I18N.humanSize(n) : (n + ' B');
     }
 
     function escapeHtml(s) {
-        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        return s.replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));
     }
 
     function renderFileList() {
@@ -238,20 +269,20 @@
         for (const f of files) {
             total += f.size;
             html += `
-                <div class="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200/60 dark:border-slate-800/60">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <div class=\"flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200/60 dark:border-slate-800/60\">
+                    <div class=\"w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0\">
+                        <svg class=\"w-4 h-4\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">
+                            <path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/>
                         </svg>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(f.name)}</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mono">${humanSize(f.size)}</p>
+                    <div class=\"flex-1 min-w-0\">
+                        <p class=\"text-sm font-medium text-slate-800 dark:text-slate-200 truncate\">${escapeHtml(f.name)}</p>
+                        <p class=\"text-xs text-slate-500 dark:text-slate-400 mono\">${humanSize(f.size)}</p>
                     </div>
                 </div>`;
         }
         const totalLabel = window.I18N ? window.I18N.t('common.total') : 'Total';
-        html += `<p class="text-xs text-right text-slate-500 dark:text-slate-400 pt-1 mono">${totalLabel}: <strong class="text-slate-700 dark:text-slate-300">${humanSize(total)}</strong></p>`;
+        html += `<p class=\"text-xs text-right text-slate-500 dark:text-slate-400 pt-1 mono\">${totalLabel}: <strong class=\"text-slate-700 dark:text-slate-300\">${humanSize(total)}</strong></p>`;
         fileList.innerHTML = html;
     }
 
@@ -281,23 +312,124 @@
     });
     fileInput.addEventListener('change', renderFileList);
 
-    // Show loading state on submit
-    form.addEventListener('submit', function () {
+    // Reset UI before a new upload attempt
+    function resetUploadUI() {
+        progressCont.classList.add('hidden');
+        progressBar.style.width = '0%';
+        progressPct.textContent = '0%';
+        progressSize.textContent = '';
+        uploadError.classList.add('hidden');
+        uploadErrorTxt.textContent = '';
+        submitBtn.disabled = false;
+        submitLabel.innerHTML = originalSubmitHtml;
+    }
+
+    // Capture original HTML on first render (i18n may have changed it)
+    function captureOriginalHtml() {
+        if (submitLabel.innerHTML.trim()) {
+            originalSubmitHtml = submitLabel.innerHTML;
+        }
+    }
+
+    // XHR upload with progress tracking
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
         if (!fileInput.files.length) return;
+
+        captureOriginalHtml();
+
+        // Hide any previous error, disable button, show spinner
+        uploadError.classList.add('hidden');
         submitBtn.disabled = true;
         const label = window.I18N ? window.I18N.t('upload.uploading') : 'Uploading…';
-        const originalHtml = submitLabel.innerHTML;
         submitLabel.innerHTML = `
-            <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" stroke-linecap="round"/>
+            <svg class=\"w-4 h-4 animate-spin\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">
+                <path d=\"M21 12a9 9 0 1 1-6.219-8.56\" stroke-linecap=\"round\"/>
             </svg>
             ${label}`;
-        // Re-enable after a timeout in case of navigation failure
-        setTimeout(() => {
-            submitBtn.disabled = false;
-            submitLabel.innerHTML = originalHtml;
-        }, 30000);
+
+        // Build FormData
+        const formData = new FormData();
+        for (const f of fileInput.files) {
+            formData.append('files', f);
+        }
+        const pwd = document.getElementById('password-input');
+        if (pwd && pwd.value) {
+            formData.append('password', pwd.value);
+        }
+
+        // Total size for progress calculations
+        let totalBytes = 0;
+        for (const f of fileInput.files) totalBytes += f.size;
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', function (evt) {
+            if (!evt.lengthComputable || totalBytes === 0) return;
+
+            progressCont.classList.remove('hidden');
+
+            const pct = Math.round((evt.loaded / totalBytes) * 100);
+            progressBar.style.width = pct + '%';
+            progressPct.textContent = pct + '%';
+
+            if (window.I18N) {
+                progressSize.textContent =
+                    window.I18N.humanSize(evt.loaded) + ' / ' + window.I18N.humanSize(totalBytes);
+            } else {
+                progressSize.textContent = evt.loaded + ' / ' + totalBytes + ' B';
+            }
+        });
+
+        xhr.addEventListener('load', function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                // Mark 100% briefly before navigating
+                progressBar.style.width = '100%';
+                progressPct.textContent = '100%';
+
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    const params = new URLSearchParams();
+                    params.set('link_id', data.link_id || '');
+                    params.set('url', data.url || '');
+                    params.set('files_count', String(data.files ? data.files.length : 0));
+                    params.set('total_size', String(data.total_size || 0));
+                    params.set('has_password', data.has_password ? '1' : '0');
+                    window.location.href = '/upload/success?' + params.toString();
+                } catch (_) {
+                    showError('Unexpected server response');
+                }
+            } else {
+                // Try to parse error from JSON response
+                let msg = 'Upload failed (' + xhr.status + ')';
+                try {
+                    const err = JSON.parse(xhr.responseText);
+                    if (err && err.detail) msg = err.detail;
+                } catch (_) {}
+                showError(msg);
+            }
+        });
+
+        xhr.addEventListener('error', function () {
+            showError('Network error — check your connection and try again');
+        });
+
+        xhr.addEventListener('abort', function () {
+            showError('Upload cancelled');
+        });
+
+        xhr.open('POST', '/api/upload');
+        // Send the session cookie automatically (same-origin)
+        xhr.send(formData);
     });
+
+    function showError(msg) {
+        progressCont.classList.add('hidden');
+        submitBtn.disabled = false;
+        submitLabel.innerHTML = originalSubmitHtml;
+        uploadErrorTxt.textContent = msg;
+        uploadError.classList.remove('hidden');
+    }
 })();
 </script>
 {% endif %}
