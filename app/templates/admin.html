@@ -1,0 +1,653 @@
+{% extends "base.html" %}
+{% block title %}Админ · OneTimeShare{% endblock %}
+
+{% block header_right %}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white"
+        data-i18n="admin.title">Панель администратора</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"
+       data-i18n="admin.subtitle">Ожидающие ссылки — живут до скачивания или отзыва.</p>
+</div>
+
+{# ---- Tab navigation ---- #}
+<div class="mb-6 flex gap-1.5 p-1 bg-slate-100/60 dark:bg-slate-800/40 rounded-xl">
+    <a href="/admin"
+       class="inline-flex items-center gap-2 px-2.5 sm:px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+              {% if tab == 'panel' %}
+              bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-sm
+              {% else %}
+              text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/60
+              {% endif %}">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span class="hidden sm:inline" data-i18n="admin.tabPanel">Админ панель</span>
+    </a>
+
+    {% if current_user and current_user.is_admin %}
+    <a href="/admin/users"
+       class="inline-flex items-center gap-2 px-2.5 sm:px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+              {% if tab == 'users' %}
+              bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-sm
+              {% else %}
+              text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/60
+              {% endif %}">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span class="hidden sm:inline" data-i18n="admin.tabUsers">Пользователи</span>
+    </a>
+
+    <a href="/admin/settings"
+       class="inline-flex items-center gap-2 px-2.5 sm:px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+              {% if tab == 'settings' %}
+              bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-sm
+              {% else %}
+              text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/60
+              {% endif %}">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span class="hidden sm:inline" data-i18n="admin.tabSettings">Настройки</span>
+    </a>
+    {% endif %}
+</div>
+
+{# ---- Notifications ---- #}
+{% set q_error = request.query_params.get("error", "") %}
+{% set q_saved = request.query_params.get("saved", "") %}
+{% if q_error == "user_exists" %}
+<div class="mb-5 flex items-start gap-3 p-3.5 bg-amber-50 dark:bg-amber-950/30
+            border border-amber-200 dark:border-amber-900/50 rounded-xl" role="alert">
+    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <p class="text-sm text-amber-800 dark:text-amber-200">Пользователь с таким именем уже существует.</p>
+</div>
+{% elif q_error == "invalid_role" %}
+<div class="mb-5 flex items-start gap-3 p-3.5 bg-amber-50 dark:bg-amber-950/30
+            border border-amber-200 dark:border-amber-900/50 rounded-xl" role="alert">
+    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <p class="text-sm text-amber-800 dark:text-amber-200">Недопустимая роль. Используйте admin или uploader.</p>
+</div>
+{% elif q_error == "cannot_delete_self" %}
+<div class="mb-5 flex items-start gap-3 p-3.5 bg-amber-50 dark:bg-amber-950/30
+            border border-amber-200 dark:border-amber-900/50 rounded-xl" role="alert">
+    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <p class="text-sm text-amber-800 dark:text-amber-200">Нельзя удалить самого себя.</p>
+</div>
+{% endif %}
+{% if q_saved == "footer" %}
+<div class="mb-5 flex items-start gap-3 p-3.5 bg-emerald-50 dark:bg-emerald-950/30
+            border border-emerald-200 dark:border-emerald-900/50 rounded-xl" role="alert">
+    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <p class="text-sm text-emerald-800 dark:text-emerald-200">Текст в подвале обновлён.</p>
+</div>
+{% elif q_saved == "user" %}
+<div class="mb-5 flex items-start gap-3 p-3.5 bg-emerald-50 dark:bg-emerald-950/30
+            border border-emerald-200 dark:border-emerald-900/50 rounded-xl" role="alert">
+    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <p class="text-sm text-emerald-800 dark:text-emerald-200">Пользователь добавлен.</p>
+</div>
+{% elif q_saved == "deleted" %}
+<div class="mb-5 flex items-start gap-3 p-3.5 bg-emerald-50 dark:bg-emerald-950/30
+            border border-emerald-200 dark:border-emerald-900/50 rounded-xl" role="alert">
+    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <p class="text-sm text-emerald-800 dark:text-emerald-200">Пользователь удалён.</p>
+</div>
+{% endif %}
+
+{# ================================================================== #}
+{#  TAB: panel — Stats cards + Links table                             #}
+{# ================================================================== #}
+{% if tab == 'panel' %}
+
+{% set total_links = links|length %}
+{% set ns = namespace(total_files=0, total_size=0, protected=0) %}
+{% for l in links %}
+    {% set ns.total_files = ns.total_files + (l.files|length) %}
+    {% set ns.total_size  = ns.total_size + l.total_size_bytes %}
+    {% if l.password_hash %}{% set ns.protected = ns.protected + 1 %}{% endif %}
+{% endfor %}
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+                rounded-xl border border-slate-200/70 dark:border-slate-800/70
+                p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+               data-i18n="admin.statLinks">Ссылки</p>
+            <div class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+            </div>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white mono">{{ total_links }}</p>
+    </div>
+    <div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+                rounded-xl border border-slate-200/70 dark:border-slate-800/70
+                p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+               data-i18n="admin.statFiles">Файлы</p>
+            <div class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+            </div>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white mono">{{ ns.total_files }}</p>
+    </div>
+    <div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+                rounded-xl border border-slate-200/70 dark:border-slate-800/70
+                p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+               data-i18n="admin.statSize">Общий размер</p>
+            <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                </svg>
+            </div>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white mono"
+           data-bytes="{{ ns.total_size }}">{{ human_size(ns.total_size) }}</p>
+    </div>
+    <div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+                rounded-xl border border-slate-200/70 dark:border-slate-800/70
+                p-4">
+        <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+               data-i18n="admin.statProtected">Защищено</p>
+            <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+        </div>
+        <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white mono">
+            <span data-protected-count="{{ ns.protected }}" data-protected-total="{{ total_links }}">{{ ns.protected }}</span>
+        </p>
+    </div>
+</div>
+
+{# ---- Links Table ---- #}
+<div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+            rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+            border border-slate-200/70 dark:border-slate-800/70 overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200"
+            data-i18n="admin.pending">Ожидающие ссылки</h2>
+        <span class="text-xs text-slate-500 dark:text-slate-400 mono">
+            <span data-files-count="{{ total_links }}">{{ total_links }}</span>
+            <span data-i18n="admin.total" class="ml-0.5">всего</span>
+        </span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-slate-50/50 dark:bg-slate-900/30">
+                <tr class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <th class="px-5 py-3" data-i18n="admin.colLink">Ссылка</th>
+                    <th class="px-5 py-3" data-i18n="admin.colCreated">Создана</th>
+                    {% if current_user and current_user.is_admin %}
+                    <th class="px-5 py-3" data-i18n="admin.colUploader">Загрузил</th>
+                    {% endif %}
+                    <th class="px-5 py-3 text-right" data-i18n="admin.colFiles">Файлы</th>
+                    <th class="px-5 py-3 text-right" data-i18n="admin.colSize">Размер</th>
+                    <th class="px-5 py-3" data-i18n="admin.colPassword">Пароль</th>
+                    <th class="px-5 py-3 text-right" data-i18n="admin.colAction">Действие</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+                {% for link in links %}
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td class="px-5 py-3.5">
+                        <a href="/d/{{ link.id }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-1.5 mono text-xs font-medium
+                                  text-indigo-600 dark:text-indigo-400
+                                  hover:text-indigo-700 dark:hover:text-indigo-300">
+                            {{ link.id[:8] }}…
+                            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                            </svg>
+                        </a>
+                    </td>
+                    <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap mono text-xs">
+                        {{ link.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </td>
+                    {% if current_user and current_user.is_admin %}
+                    <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 text-xs">
+                        {{ link.uploader_id or '—' }}
+                    </td>
+                    {% endif %}
+                    <td class="px-5 py-3.5 text-right text-slate-700 dark:text-slate-300 mono">
+                        {% if link.files %}
+                        <button type="button"
+                                class="files-popover-trigger inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400
+                                       hover:text-indigo-700 dark:hover:text-indigo-300
+                                       font-medium hover:underline decoration-dotted underline-offset-2 transition-colors"
+                                data-files-names="{{ link.files|map(attribute='original_filename')|join('||') }}"
+                                data-files-sizes="{% for f in link.files %}{{ human_size(f.size_bytes) }}{% if not loop.last %}||{% endif %}{% endfor %}"
+                                data-files-count="{{ link.files|length }}">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            <span>{{ link.files|length }}</span>
+                        </button>
+                        {% else %}
+                        <span class="text-slate-400 dark:text-slate-500">0</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 text-right text-slate-700 dark:text-slate-300 mono">
+                        <span data-bytes="{{ link.total_size_bytes }}">{{ human_size(link.total_size_bytes) }}</span>
+                    </td>
+                    <td class="px-5 py-3.5">
+                        {% if link.password_hash %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md
+                                         text-xs font-medium
+                                         bg-amber-100 dark:bg-amber-950/50
+                                         text-amber-700 dark:text-amber-300
+                                         border border-amber-200 dark:border-amber-900/50">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                <span data-i18n="admin.yes">Да</span>
+                            </span>
+                        {% else %}
+                            <span class="text-xs text-slate-400 dark:text-slate-500">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 text-right">
+                        <form method="post" action="/admin/{{ link.id }}/revoke"
+                              data-confirm-revoke
+                              data-confirm-id="{{ link.id[:8] }}"
+                              class="inline">
+                            <button type="submit"
+                                    class="inline-flex items-center gap-1.5
+                                           text-xs font-medium
+                                           text-rose-600 dark:text-rose-400
+                                           hover:text-white dark:hover:text-white
+                                           bg-rose-50 dark:bg-rose-950/30
+                                           hover:bg-rose-600 dark:hover:bg-rose-500
+                                           border border-rose-200 dark:border-rose-900/50
+                                           hover:border-rose-600 dark:hover:border-rose-500
+                                           rounded-lg px-2.5 py-1.5 transition-colors">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                                <span data-i18n="admin.revoke">Отозвать</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="{% if current_user and current_user.is_admin %}7{% else %}6{% endif %}" class="px-5 py-16 text-center">
+                        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full
+                                    bg-slate-100 dark:bg-slate-800/50 mb-3">
+                            <svg class="w-6 h-6 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <p class="text-slate-700 dark:text-slate-300 font-medium"
+                           data-i18n="admin.empty">Нет ожидающих ссылок</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"
+                           data-i18n="admin.emptyDesc">Все ссылки были скачаны или отозваны.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif tab == 'users' %}
+{# ================================================================== #}
+{#  TAB: users — User management                                       #}
+{# ================================================================== #}
+<div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+            rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+            border border-slate-200/70 dark:border-slate-800/70 overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60">
+        <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200"
+            data-i18n="admin.usersTitle">Пользователи</h2>
+    </div>
+
+    {# Existing users list #}
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-slate-50/50 dark:bg-slate-900/30">
+                <tr class="text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <th class="px-5 py-2.5" data-i18n="login.username">Имя</th>
+                    <th class="px-5 py-2.5" data-i18n="admin.colRole">Роль</th>
+                    <th class="px-5 py-2.5" data-i18n="admin.colCreated">Создан</th>
+                    <th class="px-5 py-2.5 text-right" data-i18n="admin.colAction">Действие</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+                {% for u in users %}
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td class="px-5 py-2.5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600
+                                        flex items-center justify-center text-white text-[9px] font-bold shadow-sm">
+                                {{ u.username[0]|upper }}
+                            </div>
+                            <span class="font-medium text-slate-800 dark:text-slate-200">{{ u.username }}</span>
+                            {% if u.username == current_user.username %}
+                            <span class="text-[9px] text-slate-400 dark:text-slate-500">(вы)</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-5 py-2.5">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium
+                                     {% if u.role == 'admin' %}
+                                     bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-900/50
+                                     {% else %}
+                                     bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50
+                                     {% endif %}">
+                            {{ u.role }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-2.5 text-slate-500 dark:text-slate-400 mono text-xs whitespace-nowrap">
+                        {{ u.created_at.strftime('%Y-%m-%d') }}
+                    </td>
+                    <td class="px-5 py-2.5 text-right">
+                        {% if u.username != current_user.username %}
+                        <form method="post" action="/admin/users/{{ u.username }}/delete"
+                              data-confirm-delete-user
+                              data-confirm-username="{{ u.username }}"
+                              class="inline">
+                            <button type="submit"
+                                    class="inline-flex items-center gap-1 text-xs font-medium
+                                           text-rose-600 dark:text-rose-400
+                                           hover:text-white dark:hover:text-white
+                                           bg-rose-50 dark:bg-rose-950/30
+                                           hover:bg-rose-600 dark:hover:bg-rose-500
+                                           border border-rose-200 dark:border-rose-900/50
+                                           hover:border-rose-600 dark:hover:border-rose-500
+                                           rounded-lg px-2 py-1 transition-colors">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Add new user form #}
+    <div class="px-5 py-4 border-t border-slate-200/60 dark:border-slate-800/60">
+        <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3"
+            data-i18n="admin.addUser">Добавить пользователя</h3>
+        <form method="post" action="/admin/users" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input type="text" name="username" required
+                       data-i18n-placeholder="login.usernamePh"
+                       placeholder="Имя пользователя"
+                       class="input px-3 py-2 text-sm bg-white dark:bg-slate-900
+                              border border-slate-300 dark:border-slate-700
+                              text-slate-900 dark:text-slate-100
+                              rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                              focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                              focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                <input type="password" name="password" required
+                       data-i18n-placeholder="login.passwordPh"
+                       placeholder="Пароль"
+                       class="input px-3 py-2 text-sm bg-white dark:bg-slate-900
+                              border border-slate-300 dark:border-slate-700
+                              text-slate-900 dark:text-slate-100
+                              rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                              focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                              focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                <select name="role"
+                        class="input px-3 py-2 text-sm bg-white dark:bg-slate-900
+                               border border-slate-300 dark:border-slate-700
+                               text-slate-900 dark:text-slate-100 rounded-lg
+                               focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                               focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                    <option value="uploader">uploader</option>
+                    <option value="admin">admin</option>
+                </select>
+            </div>
+            <button type="submit"
+                    class="inline-flex items-center gap-1.5 text-xs font-medium
+                           bg-indigo-600 hover:bg-indigo-500
+                           text-white px-3.5 py-2 rounded-lg
+                           shadow-sm hover:shadow transition-all">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span data-i18n="admin.addUserBtn">Добавить</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+{% elif tab == 'settings' %}
+{# ================================================================== #}
+{#  TAB: settings — Footer text editing                                #}
+{# ================================================================== #}
+<div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+            rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+            border border-slate-200/70 dark:border-slate-800/70 overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60">
+        <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200"
+            data-i18n="admin.footerTitle">Текст в подвале</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+           data-i18n="admin.footerHint">Отображается на публичных страницах загрузки и скачивания.</p>
+    </div>
+    <div class="px-5 py-4">
+        <form method="post" action="/admin/settings/footer" class="space-y-3">
+            <textarea name="footer_text" rows="4" maxlength="1024"
+                      class="input w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900
+                             border border-slate-300 dark:border-slate-700
+                             text-slate-900 dark:text-slate-100
+                             rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                             focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                             focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20
+                             resize-y"
+                      data-i18n-placeholder="admin.footerPh"
+                      placeholder="Введите текст подвала...">{{ footer_text or "" }}</textarea>
+            <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-400 dark:text-slate-500">
+                    <span data-i18n="admin.footerPreview">Предпросмотр:</span>
+                    "<span id="footer-preview-text" class="italic">{{ footer_text or "" }}</span>"
+                </span>
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 text-xs font-medium
+                               bg-indigo-600 hover:bg-indigo-500
+                               text-white px-3.5 py-2 rounded-lg
+                               shadow-sm hover:shadow transition-all">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span data-i18n="admin.footerSave">Сохранить</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{# ---- Files popover (shared, repositioned on click) ---- #}
+<div id="files-popover"
+     class="fixed z-50 hidden
+            bg-white dark:bg-slate-900
+            border border-slate-200 dark:border-slate-700
+            rounded-xl shadow-2xl shadow-slate-900/15 dark:shadow-black/50
+            min-w-[220px] max-w-[320px] max-h-[280px] overflow-y-auto"
+     role="tooltip">
+</div>
+
+<script>
+    // Footer text live preview
+    (function () {
+        var textarea = document.querySelector('textarea[name="footer_text"]');
+        var preview = document.getElementById('footer-preview-text');
+        if (textarea && preview) {
+            textarea.addEventListener('input', function () {
+                preview.textContent = this.value;
+            });
+        }
+    })();
+
+    // Files popover
+    (function () {
+        var popover = document.getElementById('files-popover');
+        if (!popover) return;
+
+        var activeTrigger = null;
+
+        function hide() {
+            popover.classList.add('hidden');
+            if (activeTrigger) {
+                activeTrigger.classList.remove('text-indigo-700', 'dark:text-indigo-300');
+                activeTrigger = null;
+            }
+        }
+
+        function position(trigger) {
+            var rect = trigger.getBoundingClientRect();
+            var top = rect.bottom + 6;
+            var left = rect.left;
+            // Keep popover within viewport
+            if (left + 320 > window.innerWidth - 16) {
+                left = window.innerWidth - 336;
+            }
+            if (left < 8) left = 8;
+            if (top + 280 > window.innerHeight - 16) {
+                top = rect.top - 288;
+            }
+            popover.style.top = top + 'px';
+            popover.style.left = left + 'px';
+        }
+
+        function show(trigger) {
+            if (activeTrigger === trigger) { hide(); return; }
+            hide();
+            activeTrigger = trigger;
+            trigger.classList.add('text-indigo-700', 'dark:text-indigo-300');
+
+            var namesRaw = trigger.getAttribute('data-files-names') || '';
+            var sizesRaw = trigger.getAttribute('data-files-sizes') || '';
+            var names = namesRaw ? namesRaw.split('||') : [];
+            var sizes = sizesRaw ? sizesRaw.split('||') : [];
+
+            var html = '<div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800">' +
+                       '<p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">' +
+                       (window.I18N ? window.I18N.t('admin.statFiles') : 'Files') +
+                       ' <span class="text-slate-400 dark:text-slate-500 font-normal">(' + names.length + ')</span>' +
+                       '</p></div>' +
+                       '<div class="py-1">';
+
+            for (var i = 0; i < names.length; i++) {
+                html += '<div class="flex items-start gap-2.5 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">' +
+                        '<svg class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>' +
+                        '</svg>' +
+                        '<div class="flex-1 min-w-0">' +
+                        '<p class="text-sm text-slate-800 dark:text-slate-200 truncate">' + escapeHtml(names[i]) + '</p>' +
+                        '<p class="text-xs text-slate-500 dark:text-slate-400 mono">' + (sizes[i] || '—') + '</p>' +
+                        '</div></div>';
+            }
+
+            html += '</div>';
+            popover.innerHTML = html;
+            popover.classList.remove('hidden');
+            position(trigger);
+        }
+
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, function (c) {
+                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+            });
+        }
+
+        // Delegate click events
+        document.addEventListener('click', function (e) {
+            var trigger = e.target.closest('.files-popover-trigger');
+            if (trigger) {
+                e.stopPropagation();
+                show(trigger);
+            } else if (!popover.contains(e.target)) {
+                hide();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') hide();
+        });
+
+        window.addEventListener('scroll', function () {
+            if (activeTrigger) position(activeTrigger);
+        }, { passive: true });
+
+        window.addEventListener('resize', function () {
+            if (activeTrigger) position(activeTrigger);
+        });
+    })();
+
+    // Localised confirm() for revoke buttons
+    (function () {
+        function bind() {
+            var forms = document.querySelectorAll('form[data-confirm-revoke]');
+            for (var i = 0; i < forms.length; i++) {
+                forms[i].addEventListener('submit', function (e) {
+                    var id = this.dataset.confirmId || '';
+                    var msg = (window.I18N ? window.I18N.t('admin.confirmRevoke', { id: id }) : 'Delete?');
+                    if (!confirm(msg)) e.preventDefault();
+                });
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bind);
+        } else {
+            bind();
+        }
+    })();
+
+    // Localised confirm() for delete user buttons
+    (function () {
+        function bindDeleteUsers() {
+            var forms = document.querySelectorAll('form[data-confirm-delete-user]');
+            for (var i = 0; i < forms.length; i++) {
+                forms[i].addEventListener('submit', function (e) {
+                    var uname = this.dataset.confirmUsername || '';
+                    var msg = (window.I18N ? window.I18N.t('admin.confirmDeleteUser', { username: uname }) : 'Delete user?');
+                    if (!confirm(msg)) e.preventDefault();
+                });
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bindDeleteUsers);
+        } else {
+            bindDeleteUsers();
+        }
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}
+{% if show_login %}Войти · OneTimeShare{% else %}Загрузка · OneTimeShare{% endif %}
+{% endblock %}
+
+{# header_right block intentionally empty — user info is in base.html #}
+{% block header_right %}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+{% if show_login %}
+{# ================================================================== #}
+{#  LOGIN FORM                                                         #}
+{# ================================================================== #}
+<div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+            rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+            border border-slate-200/70 dark:border-slate-800/70
+            p-8 sm:p-10">
+
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl
+                    bg-gradient-to-br from-indigo-500 to-violet-600
+                    shadow-lg shadow-indigo-500/30 mb-4">
+            <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="11" width="16" height="10" rx="2"/>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
+            data-i18n="login.welcome">С возвращением</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5"
+           data-i18n="login.subtitle">Войдите, чтобы создавать ссылки. Получателям учётная запись не нужна.</p>
+    </div>
+
+    {% if error_code == "invalid" %}
+    <div class="mb-5 flex items-start gap-3 p-3.5 bg-rose-50 dark:bg-rose-950/30
+                border border-rose-200 dark:border-rose-900/50 rounded-xl" role="alert">
+        <svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p class="text-sm text-rose-800 dark:text-rose-200" data-i18n="login.invalid">Неверное имя пользователя или пароль.</p>
+    </div>
+    {% elif error_code == "forbidden" %}
+    <div class="mb-5 flex items-start gap-3 p-3.5 bg-amber-50 dark:bg-amber-950/30
+                border border-amber-200 dark:border-amber-900/50 rounded-xl" role="alert">
+        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <p class="text-sm text-amber-800 dark:text-amber-200" data-i18n="login.forbidden">У вас нет прав для доступа к этой странице.</p>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/login" autocomplete="on" class="space-y-4">
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <div>
+            <label for="username" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+                   data-i18n="login.username">Имя пользователя</label>
+            <input id="username" type="text" name="username" required autofocus
+                   autocomplete="username"
+                   data-i18n-placeholder="login.usernamePh"
+                   placeholder="Введите имя пользователя"
+                   class="input w-full px-3.5 py-2.5 bg-white dark:bg-slate-900
+                          border border-slate-300 dark:border-slate-700
+                          text-slate-900 dark:text-slate-100
+                          rounded-xl placeholder:text-slate-400 dark:placeholder:text-slate-500
+                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+        </div>
+
+        <div>
+            <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+                   data-i18n="login.password">Пароль</label>
+            <input id="password" type="password" name="password" required
+                   autocomplete="current-password"
+                   data-i18n-placeholder="login.passwordPh"
+                   placeholder="Введите пароль"
+                   class="input w-full px-3.5 py-2.5 bg-white dark:bg-slate-900
+                          border border-slate-300 dark:border-slate-700
+                          text-slate-900 dark:text-slate-100
+                          rounded-xl placeholder:text-slate-400 dark:placeholder:text-slate-500
+                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+        </div>
+
+        <button type="submit"
+                class="btn w-full mt-2 bg-gradient-to-r from-indigo-600 to-violet-600
+                       hover:from-indigo-500 hover:to-violet-500
+                       text-white font-semibold py-2.5 px-4 rounded-xl
+                       shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40
+                       active:scale-[0.98] transition-all">
+            <span data-i18n="login.submit">Войти</span>
+        </button>
+    </form>
+
+    <p class="text-xs text-slate-400 dark:text-slate-500 mt-6 text-center"
+       data-i18n="login.contactAdmin">Нет доступа? Свяжитесь с администратором этого экземпляра.</p>
+</div>
+
+{% else %}
+{# ================================================================== #}
+{#  UPLOAD FORM                                                        #}
+{# ================================================================== #}
+<div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+            rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+            border border-slate-200/70 dark:border-slate-800/70
+            p-6 sm:p-8">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
+            data-i18n="upload.title">Безопасный обмен файлами</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"
+           data-i18n="upload.subtitle">Загрузите файлы и получите одноразовую ссылку. Ссылка самоуничтожится после первого скачивания.</p>
+    </div>
+
+    <form id="upload-form" method="post" action="/upload" enctype="multipart/form-data" novalidate class="space-y-5">
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                   data-i18n="upload.files">Файлы</label>
+            <div id="dropzone"
+                 class="relative cursor-pointer
+                        border-2 border-dashed border-slate-300 dark:border-slate-700
+                        rounded-xl bg-slate-50/50 dark:bg-slate-900/40
+                        hover:border-indigo-400 dark:hover:border-indigo-500
+                        hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20
+                        transition-all p-8 text-center group">
+                <input type="file" name="files" id="files" multiple required class="absolute inset-0 opacity-0 cursor-pointer">
+                <div class="pointer-events-none">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl
+                                bg-indigo-100 dark:bg-indigo-950/50
+                                text-indigo-600 dark:text-indigo-400
+                                group-hover:scale-110 transition-transform mb-3">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-slate-700 dark:text-slate-300">
+                        <span class="font-semibold text-indigo-600 dark:text-indigo-400"
+                              data-i18n="upload.clickToUpload">Нажмите, чтобы выбрать</span>
+                        <span class="text-slate-500 dark:text-slate-400" data-i18n="upload.orDragDrop">или перетащите файлы</span>
+                    </p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1"
+                       data-i18n="upload.fileTypes">Любой тип · Несколько файлов упакуются в ZIP</p>
+                </div>
+            </div>
+            <div id="file-list" class="mt-3 space-y-2 hidden"></div>
+        </div>
+
+        <div>
+            <label for="password" class="flex items-center justify-between mb-1.5">
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <span data-i18n="upload.password">Пароль</span>
+                    <span class="font-normal text-slate-400 dark:text-slate-500"
+                          data-i18n="upload.passwordOptional">необязательно</span>
+                </span>
+                <span class="text-xs text-slate-400 dark:text-slate-500"
+                      data-i18n="upload.passwordHint">Получатель должен будет ввести этот пароль</span>
+            </label>
+            <input id="password-input" type="password" name="password" maxlength="256"
+                   autocomplete="new-password"
+                   data-i18n-placeholder="upload.passwordPh"
+                   placeholder="Оставьте пустым, чтобы не защищать"
+                   class="input w-full px-3.5 py-2.5 bg-white dark:bg-slate-900
+                          border border-slate-300 dark:border-slate-700
+                          text-slate-900 dark:text-slate-100
+                          rounded-xl placeholder:text-slate-400 dark:placeholder:text-slate-500
+                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+        </div>
+
+        <button type="submit" id="submit-btn"
+                class="btn w-full bg-gradient-to-r from-indigo-600 to-violet-600
+                       hover:from-indigo-500 hover:to-violet-500
+                       text-white font-semibold py-2.5 px-4 rounded-xl
+                       shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40
+                       active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
+                       transition-all">
+            <span class="inline-flex items-center justify-center gap-2" id="submit-label">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                <span data-i18n="upload.generate">Создать ссылку</span>
+            </span>
+        </button>
+    </form>
+
+    {% if upload_error %}
+    <div class="mt-6 flex items-start gap-3 p-3.5
+                bg-rose-50 dark:bg-rose-950/30
+                border border-rose-200 dark:border-rose-900/50 rounded-xl" role="alert">
+        <svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p class="text-sm text-rose-800 dark:text-rose-200">{{ upload_error }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+</div>
+
+{% if not show_login %}
+<script>
+(() => {
+    const form      = document.getElementById('upload-form');
+    const dropzone   = document.getElementById('dropzone');
+    const fileInput  = document.getElementById('files');
+    const fileList   = document.getElementById('file-list');
+    const submitBtn  = document.getElementById('submit-btn');
+    const submitLabel = document.getElementById('submit-label');
+
+    function humanSize(n) {
+        return window.I18N ? window.I18N.humanSize(n) : (n + ' B');
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function renderFileList() {
+        const files = fileInput.files;
+        if (!files.length) {
+            fileList.classList.add('hidden');
+            fileList.innerHTML = '';
+            return;
+        }
+        fileList.classList.remove('hidden');
+        let html = '';
+        let total = 0;
+        for (const f of files) {
+            total += f.size;
+            html += `
+                <div class="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200/60 dark:border-slate-800/60">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(f.name)}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mono">${humanSize(f.size)}</p>
+                    </div>
+                </div>`;
+        }
+        const totalLabel = window.I18N ? window.I18N.t('common.total') : 'Total';
+        html += `<p class="text-xs text-right text-slate-500 dark:text-slate-400 pt-1 mono">${totalLabel}: <strong class="text-slate-700 dark:text-slate-300">${humanSize(total)}</strong></p>`;
+        fileList.innerHTML = html;
+    }
+
+    document.addEventListener('i18n:change', () => {
+        if (fileInput.files && fileInput.files.length) renderFileList();
+    });
+
+    ['dragenter', 'dragover'].forEach(ev => {
+        dropzone.addEventListener(ev, e => {
+            e.preventDefault(); e.stopPropagation();
+            dropzone.classList.add('border-indigo-500', 'dark:border-indigo-400',
+                                    'bg-indigo-50', 'dark:bg-indigo-950/30');
+        });
+    });
+    ['dragleave', 'drop'].forEach(ev => {
+        dropzone.addEventListener(ev, e => {
+            e.preventDefault(); e.stopPropagation();
+            dropzone.classList.remove('border-indigo-500', 'dark:border-indigo-400',
+                                     'bg-indigo-50', 'dark:bg-indigo-950/30');
+        });
+    });
+    dropzone.addEventListener('drop', e => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            renderFileList();
+        }
+    });
+    fileInput.addEventListener('change', renderFileList);
+
+    // Show loading state on submit
+    form.addEventListener('submit', function () {
+        if (!fileInput.files.length) return;
+        submitBtn.disabled = true;
+        const label = window.I18N ? window.I18N.t('upload.uploading') : 'Uploading…';
+        const originalHtml = submitLabel.innerHTML;
+        submitLabel.innerHTML = `
+            <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" stroke-linecap="round"/>
+            </svg>
+            ${label}`;
+        // Re-enable after a timeout in case of navigation failure
+        setTimeout(() => {
+            submitBtn.disabled = false;
+            submitLabel.innerHTML = originalHtml;
+        }, 30000);
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

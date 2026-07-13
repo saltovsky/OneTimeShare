@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Ссылка готова · OneTimeShare{% endblock %}
+
+{% block header_right %}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+<div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+            rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+            border border-slate-200/70 dark:border-slate-800/70
+            p-8 sm:p-10">
+
+    {# Success icon #}
+    <div class="flex flex-col items-center mb-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl
+                    bg-gradient-to-br from-emerald-500 to-teal-600
+                    shadow-lg shadow-emerald-500/30 mb-4">
+            <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
+            data-i18n="upload.ready">Ваша ссылка готова</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"
+           data-i18n="download.warning">Ссылка будет уничтожена после первого скачивания.</p>
+    </div>
+
+    {# File list #}
+    {% if file_names %}
+    <div class="text-left bg-slate-50/70 dark:bg-slate-800/40
+                border border-slate-200/60 dark:border-slate-800/60
+                rounded-xl p-3 mb-5 max-h-40 overflow-y-auto">
+        <ul class="text-sm text-slate-700 dark:text-slate-300 space-y-1.5">
+            {% for name in file_names %}
+            <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="break-all">{{ name }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-right mono">
+            <span data-i18n="common.total">Всего</span>:
+            <strong class="text-slate-700 dark:text-slate-300"
+                    data-bytes="{{ total_size_bytes }}">{{ total_size }}</strong>
+            {% if has_password %}
+            <span class="ml-2">🔒</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# Share URL with copy button #}
+    <div class="mb-5">
+        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider"
+               data-i18n="admin.colLink">Ссылка для отправки</label>
+        <div class="flex items-stretch gap-2">
+            <input id="share-url" readonly
+                   value="{{ share_url }}"
+                   class="input flex-1 px-3 py-2.5 mono text-sm
+                          bg-white dark:bg-slate-900
+                          border border-slate-300 dark:border-slate-700
+                          text-slate-800 dark:text-slate-200 rounded-lg min-w-0
+                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+            <button id="copy-btn" type="button"
+                    class="btn shrink-0 inline-flex items-center gap-1.5
+                           bg-indigo-600 hover:bg-indigo-500
+                           text-white text-sm font-medium px-4 py-2.5 rounded-lg
+                           shadow-sm hover:shadow transition-all">
+                <svg id="copy-icon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                <svg id="check-icon" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span id="copy-label" data-i18n="common.copy">Копировать</span>
+            </button>
+        </div>
+    </div>
+
+    {# Info line #}
+    <p class="text-xs text-slate-500 dark:text-slate-400 mb-6 text-center">
+        <span class="mono" data-files-count="{{ files_count }}">{{ files_count }}</span>
+        ·
+        <span class="mono" data-bytes="{{ total_size_bytes }}">{{ total_size }}</span>
+        {% if has_password %}
+        · <span data-i18n="upload.protected">🔒 защищено паролем</span>
+        {% endif %}
+    </p>
+
+    {# Create new link button #}
+    <a href="/"
+       class="btn inline-flex items-center justify-center gap-2 w-full
+              bg-gradient-to-r from-indigo-600 to-violet-600
+              hover:from-indigo-500 hover:to-violet-500
+              text-white font-semibold py-3 px-4 rounded-xl
+              shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40
+              active:scale-[0.98] transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span data-i18n="upload.createAnother">Создать новую ссылку</span>
+    </a>
+</div>
+
+</div>
+
+<script>
+    (function() {
+        var copyBtn = document.getElementById('copy-btn');
+        var linkEl = document.getElementById('share-url');
+        var copyIcon = document.getElementById('copy-icon');
+        var checkIcon = document.getElementById('check-icon');
+        var copyLabel = document.getElementById('copy-label');
+        if (!copyBtn || !linkEl) return;
+
+        copyBtn.addEventListener('click', async function () {
+            try { await navigator.clipboard.writeText(linkEl.value); }
+            catch { linkEl.select(); document.execCommand('copy'); }
+            copyIcon.classList.add('hidden');
+            checkIcon.classList.remove('hidden');
+            copyLabel.textContent = window.I18N ? window.I18N.t('common.copied') : 'Copied!';
+            copyBtn.classList.add('!bg-emerald-600');
+            setTimeout(function () {
+                copyIcon.classList.remove('hidden');
+                checkIcon.classList.add('hidden');
+                window.I18N && window.I18N.applyI18n();
+                copyBtn.classList.remove('!bg-emerald-600');
+            }, 1500);
+        });
+    })();
+</script>
+{% endblock %}

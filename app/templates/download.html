@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Скачивание · OneTimeShare{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+
+<div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+            rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+            border border-slate-200/70 dark:border-slate-800/70
+            p-8 sm:p-10 text-center">
+
+    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl
+                bg-gradient-to-br from-emerald-500 to-teal-600
+                shadow-lg shadow-emerald-500/30 mb-5">
+        <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+    </div>
+
+    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
+        data-i18n="download.title">Готово к скачиванию</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 mb-5"
+       data-i18n="download.warning">Нажмите кнопку ниже. <strong>Ссылка будет уничтожена</strong> сразу после начала скачивания.</p>
+
+    <div class="text-left bg-slate-50/70 dark:bg-slate-800/40
+                border border-slate-200/60 dark:border-slate-800/60
+                rounded-xl p-3 mb-6 max-h-48 overflow-y-auto">
+        <ul class="text-sm text-slate-700 dark:text-slate-300 space-y-1.5">
+            {% for f in files %}
+            <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="break-all">{{ f }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="text-xs text-slate-500 dark:text-slate-400 mt-2.5 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 text-right mono">
+            <span data-i18n="common.total">Всего</span>:
+            <strong class="text-slate-700 dark:text-slate-300"
+                    data-bytes="{{ total_size_bytes }}">{{ total_size }}</strong>
+        </div>
+    </div>
+
+    <a href="/d/{{ link_id }}/file" id="dl-btn"
+       class="btn inline-flex items-center justify-center gap-2 w-full
+              bg-gradient-to-r from-indigo-600 to-violet-600
+              hover:from-indigo-500 hover:to-violet-500
+              text-white font-semibold py-3 px-4 rounded-xl
+              shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40
+              active:scale-[0.98] transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span data-i18n="download.button">Скачать</span>
+    </a>
+    <p class="text-xs text-slate-500 dark:text-slate-400 mt-4 flex items-center justify-center gap-1.5">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span data-i18n="download.retryHint">Если загрузка прервётся, файлы останутся доступны для повторной попытки.</span>
+    </p>
+</div>
+
+</div>
+{% endblock %}

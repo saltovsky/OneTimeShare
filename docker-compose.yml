@@ -1,0 +1,41 @@
+services:
+  onetimeshare:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: onetimeshare:latest
+    container_name: onetimeshare
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:8000:8000"
+    volumes:
+      - onetimeshare_data:/app/data
+    environment:
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      UPLOADER_USERNAME: ${UPLOADER_USERNAME:-uploader}
+      UPLOADER_PASSWORD: ${UPLOADER_PASSWORD:-changeme}
+      SECRET_KEY: ${SECRET_KEY:-please-change-this-to-a-long-random-string}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-104857600}            # 100 MB per file
+      MAX_TOTAL_SIZE: ${MAX_TOTAL_SIZE:-524288000}         # 500 MB per upload
+      CLEANUP_INTERVAL_SECONDS: ${CLEANUP_INTERVAL_SECONDS:-3600}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    read_only: false
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  onetimeshare_data:
+    name: onetimeshare_data
