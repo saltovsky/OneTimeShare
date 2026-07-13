@@ -227,12 +227,15 @@ def verify_download_token(token: str, expected_link_id: str) -> bool:
 
 # ---------------------------------------------------------------------------
 # Filename sanitisation — defence-in-depth against path traversal and RCE.
-# 1. `os.path.basename` strips any directory components (incl. null bytes tricks).
-# 2. Whitelist of allowed characters; everything else -> underscore.
-# 3. Leading dots stripped (no hidden files).
-# 4. Length capped to 255 chars (Linux ext4 limit).
+# 1. Null-byte / directory separator stripping before the regex.
+# 2. Unicode-aware whitelist: \w (letters + digits from all scripts) plus
+#    dot, hyphen, space. Everything else -> underscore.
+#    Control chars (U+0000–U+001F, U+007F) and path separators are NOT
+#    word chars and are replaced.
+# 3. Leading/trailing dots stripped (no hidden files).
+# 4. Length capped to 200 chars (Linux ext4 limit).
 # ---------------------------------------------------------------------------
-_SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._\- ]")
+_SAFE_FILENAME_RE = re.compile(r"[^\w.\- ]", re.UNICODE)
 
 
 def sanitize_filename(name: Optional[str]) -> str:
