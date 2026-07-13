@@ -231,6 +231,7 @@
 </div>
 
 {% if not show_login %}
+{% raw %}
 <script>
 (() => {
     const form          = document.getElementById('upload-form');
@@ -253,7 +254,8 @@
     }
 
     function escapeHtml(s) {
-        return s.replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));
+        const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
+        return s.replace(/[&<>"']/g, function(c) { return map[c]; });
     }
 
     function renderFileList() {
@@ -268,43 +270,40 @@
         let total = 0;
         for (const f of files) {
             total += f.size;
-            html += `
-                <div class=\"flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200/60 dark:border-slate-800/60\">
-                    <div class=\"w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0\">
-                        <svg class=\"w-4 h-4\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">
-                            <path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/>
-                        </svg>
-                    </div>
-                    <div class=\"flex-1 min-w-0\">
-                        <p class=\"text-sm font-medium text-slate-800 dark:text-slate-200 truncate\">${escapeHtml(f.name)}</p>
-                        <p class=\"text-xs text-slate-500 dark:text-slate-400 mono\">${humanSize(f.size)}</p>
-                    </div>
-                </div>`;
+            html += '<div class="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200/60 dark:border-slate-800/60">' +
+                '<div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">' +
+                '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>' +
+                '</svg></div>' +
+                '<div class="flex-1 min-w-0">' +
+                '<p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">' + escapeHtml(f.name) + '</p>' +
+                '<p class="text-xs text-slate-500 dark:text-slate-400 mono">' + humanSize(f.size) + '</p>' +
+                '</div></div>';
         }
         const totalLabel = window.I18N ? window.I18N.t('common.total') : 'Total';
-        html += `<p class=\"text-xs text-right text-slate-500 dark:text-slate-400 pt-1 mono\">${totalLabel}: <strong class=\"text-slate-700 dark:text-slate-300\">${humanSize(total)}</strong></p>`;
+        html += '<p class="text-xs text-right text-slate-500 dark:text-slate-400 pt-1 mono">' + totalLabel + ': <strong class="text-slate-700 dark:text-slate-300">' + humanSize(total) + '</strong></p>';
         fileList.innerHTML = html;
     }
 
-    document.addEventListener('i18n:change', () => {
+    document.addEventListener('i18n:change', function() {
         if (fileInput.files && fileInput.files.length) renderFileList();
     });
 
-    ['dragenter', 'dragover'].forEach(ev => {
-        dropzone.addEventListener(ev, e => {
+    ['dragenter', 'dragover'].forEach(function(ev) {
+        dropzone.addEventListener(ev, function(e) {
             e.preventDefault(); e.stopPropagation();
             dropzone.classList.add('border-indigo-500', 'dark:border-indigo-400',
                                     'bg-indigo-50', 'dark:bg-indigo-950/30');
         });
     });
-    ['dragleave', 'drop'].forEach(ev => {
-        dropzone.addEventListener(ev, e => {
+    ['dragleave', 'drop'].forEach(function(ev) {
+        dropzone.addEventListener(ev, function(e) {
             e.preventDefault(); e.stopPropagation();
             dropzone.classList.remove('border-indigo-500', 'dark:border-indigo-400',
                                      'bg-indigo-50', 'dark:bg-indigo-950/30');
         });
     });
-    dropzone.addEventListener('drop', e => {
+    dropzone.addEventListener('drop', function(e) {
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
             fileInput.files = e.dataTransfer.files;
             renderFileList();
@@ -332,7 +331,7 @@
     }
 
     // XHR upload with progress tracking
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
         if (!fileInput.files.length) return;
 
@@ -341,35 +340,33 @@
         // Hide any previous error, disable button, show spinner
         uploadError.classList.add('hidden');
         submitBtn.disabled = true;
-        const label = window.I18N ? window.I18N.t('upload.uploading') : 'Uploading…';
-        submitLabel.innerHTML = `
-            <svg class=\"w-4 h-4 animate-spin\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">
-                <path d=\"M21 12a9 9 0 1 1-6.219-8.56\" stroke-linecap=\"round\"/>
-            </svg>
-            ${label}`;
+        var label = window.I18N ? window.I18N.t('upload.uploading') : 'Uploading…';
+        submitLabel.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">' +
+            '<path d="M21 12a9 9 0 1 1-6.219-8.56" stroke-linecap="round"/>' +
+            '</svg> ' + label;
 
         // Build FormData
-        const formData = new FormData();
-        for (const f of fileInput.files) {
-            formData.append('files', f);
+        var formData = new FormData();
+        for (var i = 0; i < fileInput.files.length; i++) {
+            formData.append('files', fileInput.files[i]);
         }
-        const pwd = document.getElementById('password-input');
+        var pwd = document.getElementById('password-input');
         if (pwd && pwd.value) {
             formData.append('password', pwd.value);
         }
 
         // Total size for progress calculations
-        let totalBytes = 0;
-        for (const f of fileInput.files) totalBytes += f.size;
+        var totalBytes = 0;
+        for (var j = 0; j < fileInput.files.length; j++) totalBytes += fileInput.files[j].size;
 
-        const xhr = new XMLHttpRequest();
+        var xhr = new XMLHttpRequest();
 
-        xhr.upload.addEventListener('progress', function (evt) {
+        xhr.upload.addEventListener('progress', function(evt) {
             if (!evt.lengthComputable || totalBytes === 0) return;
 
             progressCont.classList.remove('hidden');
 
-            const pct = Math.round((evt.loaded / totalBytes) * 100);
+            var pct = Math.round((evt.loaded / totalBytes) * 100);
             progressBar.style.width = pct + '%';
             progressPct.textContent = pct + '%';
 
@@ -381,15 +378,15 @@
             }
         });
 
-        xhr.addEventListener('load', function () {
+        xhr.addEventListener('load', function() {
             if (xhr.status >= 200 && xhr.status < 300) {
                 // Mark 100% briefly before navigating
                 progressBar.style.width = '100%';
                 progressPct.textContent = '100%';
 
                 try {
-                    const data = JSON.parse(xhr.responseText);
-                    const params = new URLSearchParams();
+                    var data = JSON.parse(xhr.responseText);
+                    var params = new URLSearchParams();
                     params.set('link_id', data.link_id || '');
                     params.set('url', data.url || '');
                     params.set('files_count', String(data.files ? data.files.length : 0));
@@ -401,25 +398,24 @@
                 }
             } else {
                 // Try to parse error from JSON response
-                let msg = 'Upload failed (' + xhr.status + ')';
+                var msg = 'Upload failed (' + xhr.status + ')';
                 try {
-                    const err = JSON.parse(xhr.responseText);
+                    var err = JSON.parse(xhr.responseText);
                     if (err && err.detail) msg = err.detail;
                 } catch (_) {}
                 showError(msg);
             }
         });
 
-        xhr.addEventListener('error', function () {
-            showError('Network error — check your connection and try again');
+        xhr.addEventListener('error', function() {
+            showError('Network error. Check your connection and try again.');
         });
 
-        xhr.addEventListener('abort', function () {
-            showError('Upload cancelled');
+        xhr.addEventListener('abort', function() {
+            showError('Upload cancelled.');
         });
 
         xhr.open('POST', '/api/upload');
-        // Send the session cookie automatically (same-origin)
         xhr.send(formData);
     });
 
@@ -432,5 +428,6 @@
     }
 })();
 </script>
+{% endraw %}
 {% endif %}
 {% endblock %}
