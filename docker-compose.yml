@@ -18,6 +18,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-please-change-this-to-a-long-random-string}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-104857600}            # 100 MB per file
       MAX_TOTAL_SIZE: ${MAX_TOTAL_SIZE:-524288000}         # 500 MB per upload
+      UPLOAD_CHUNK_SIZE: ${UPLOAD_CHUNK_SIZE:-1048576}     # 1 MB permanent-storage copy buffer
       CLEANUP_INTERVAL_SECONDS: ${CLEANUP_INTERVAL_SECONDS:-3600}
       APP_URL: ${APP_URL:-http://localhost:8000}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

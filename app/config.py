@@ -45,6 +45,10 @@ class Settings:
 
     # Streaming
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", str(64 * 1024)))   # 64 KB
+    # Multipart uploads have already been spooled by Starlette when the route
+    # handler runs. Use a larger buffer for the one remaining copy into the
+    # permanent storage, without increasing download-stream memory usage.
+    UPLOAD_CHUNK_SIZE: int = int(os.getenv("UPLOAD_CHUNK_SIZE", str(1024 * 1024)))  # 1 MB
 
     # Background cleanup
     CLEANUP_INTERVAL_SECONDS: int = int(os.getenv("CLEANUP_INTERVAL_SECONDS", "3600"))

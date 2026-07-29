@@ -8,9 +8,11 @@
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import List, Optional
 from urllib.parse import quote
@@ -38,7 +40,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
-CHUNK = settings.CHUNK_SIZE
+UPLOAD_CHUNK = settings.UPLOAD_CHUNK_SIZE
 
 
 @dataclass
@@ -71,9 +73,15 @@ async def _process_upload(
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
 
-    pwd_hash = hash_password(password) if password else None
+    # Argon2 is deliberately CPU/memory intensive. Start it in a worker so it
+    # does not freeze the event loop or add to the final disk-copy delay.
+    password_hash_task = (
+        asyncio.create_task(asyncio.to_thread(hash_password, password))
+        if password
+        else None
+    )
 
-    link = Link(password_hash=pwd_hash, uploader_id=uploader)
+    link = Link(uploader_id=uploader)
     db.add(link)
     await db.flush()
 
@@ -98,7 +106,7 @@ async def _process_upload(
             try:
                 async with aiofiles.open(stored_path, "wb") as out:
                     while True:
-                        chunk = await upload_file.read(CHUNK)
+                        chunk = await upload_file.read(UPLOAD_CHUNK)
                         if not chunk:
                             break
                         size += len(chunk)
@@ -146,10 +154,16 @@ async def _process_upload(
             )
             saved.append({"name": original, "size": size})
 
+        if password_hash_task is not None:
+            link.password_hash = await password_hash_task
         link.total_size_bytes = total_size
         await db.commit()
 
     except Exception:
+        if password_hash_task is not None and not password_hash_task.done():
+            password_hash_task.cancel()
+            with suppress(asyncio.CancelledError, Exception):
+                await password_hash_task
         await db.rollback()
         for p in created_paths:
             try:
@@ -168,7 +182,7 @@ async def _process_upload(
     return UploadResult(
         link_id=link.id,
         url=share_url,
-        has_password=bool(pwd_hash),
+        has_password=password_hash_task is not None,
         files_count=len(saved),
         total_size=total_size,
         file_names=file_names,
