@@ -53,6 +53,19 @@
         </svg>
         <span class="hidden sm:inline" data-i18n="admin.tabSettings">Настройки</span>
     </a>
+
+    <a href="/admin/ldap"
+       class="inline-flex items-center gap-2 px-2.5 sm:px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+              {% if tab == 'ldap' %}
+              bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-sm
+              {% else %}
+              text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/60
+              {% endif %}">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M6 12h.01M10 12h.01M14 12h.01M6 16h8"/>
+        </svg>
+        <span class="hidden sm:inline" data-i18n="admin.tabLdap">LDAP</span>
+    </a>
     {% endif %}
 </div>
 
@@ -107,6 +120,14 @@
         <polyline points="20 6 9 17 4 12"/>
     </svg>
     <p class="text-sm text-emerald-800 dark:text-emerald-200">Пользователь удалён.</p>
+</div>
+{% elif q_saved == "ldap" %}
+<div class="mb-5 flex items-start gap-3 p-3.5 bg-emerald-50 dark:bg-emerald-950/30
+            border border-emerald-200 dark:border-emerald-900/50 rounded-xl" role="alert">
+    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <p class="text-sm text-emerald-800 dark:text-emerald-200" data-i18n="admin.ldapSaved">Настройки LDAP сохранены.</p>
 </div>
 {% endif %}
 
@@ -492,6 +513,307 @@
         </form>
     </div>
 </div>
+
+{% elif tab == 'ldap' %}
+{# ================================================================== #}
+{#  TAB: ldap — LDAP connection configuration                          #}
+{# ================================================================== #}
+<div class="space-y-6">
+    {# ---- Connection settings ---- #}
+    <div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+                rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+                border border-slate-200/70 dark:border-slate-800/70 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60">
+            <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200"
+                data-i18n="admin.ldapConnection">Подключение к LDAP</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+               data-i18n="admin.ldapConnHint">Настройте параметры сервера каталогов для входа пользователей через LDAP.</p>
+        </div>
+        <div class="px-5 py-4">
+            <form method="post" action="/admin/ldap" id="ldap-form" class="space-y-4">
+                {# Master on/off toggle #}
+                <div class="flex items-center justify-between p-3.5 rounded-xl
+                            {% if ldap_config and ldap_config.enabled %}
+                            bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40
+                            {% else %}
+                            bg-slate-50 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-700/40
+                            {% endif %}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center
+                                    {% if ldap_config and ldap_config.enabled %}
+                                    bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400
+                                    {% else %}
+                                    bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400
+                                    {% endif %}">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M6 12h.01M10 12h.01M14 12h.01M6 16h8"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-200"
+                               data-i18n="admin.ldapEnable">LDAP авторизация</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400"
+                               data-i18n="admin.ldapEnableHint">Включить вход через LDAP. Пользователи будут создаваться автоматически с ролью uploader.</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0" title="Toggle LDAP">
+                        <input type="checkbox" name="ldap_enabled" value="on"
+                               class="sr-only peer"
+                               {% if ldap_config and ldap_config.enabled %}checked{% endif %}>
+                        <div class="w-11 h-6 rounded-full
+                                    peer bg-slate-300 dark:bg-slate-600
+                                    peer-checked:bg-emerald-500 dark:peer-checked:bg-emerald-500
+                                    peer-focus:ring-4 peer-focus:ring-emerald-300/30 dark:peer-focus:ring-emerald-800/30
+                                    after:content-[''] after:absolute after:top-0.5 after:start-[2px]
+                                    after:bg-white after:border-slate-300 dark:after:border-slate-500
+                                    after:border after:rounded-full after:h-5 after:w-5
+                                    after:transition-all
+                                    peer-checked:after:translate-x-full peer-checked:after:border-white
+                                    rtl:peer-checked:after:-translate-x-full">
+                        </div>
+                    </label>
+                </div>
+
+                {# Host + Port + Protocol row #}
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div class="sm:col-span-6">
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                               data-i18n="admin.ldapHost">Host</label>
+                        <input type="text" name="ldap_host"
+                               value="{{ ldap_config.host if ldap_config else '' }}"
+                               placeholder="ldap.example.com"
+                               class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                      border border-slate-300 dark:border-slate-700
+                                      text-slate-900 dark:text-slate-100
+                                      rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                      focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                      focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                               data-i18n="admin.ldapPort">Port</label>
+                        <input type="number" name="ldap_port" min="1" max="65535"
+                               value="{{ ldap_config.port if ldap_config else 389 }}"
+                               class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                      border border-slate-300 dark:border-slate-700
+                                      text-slate-900 dark:text-slate-100
+                                      rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                      focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                      focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                               data-i18n="admin.ldapProtocol">Протокол</label>
+                        <select name="ldap_protocol"
+                                class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                       border border-slate-300 dark:border-slate-700
+                                       text-slate-900 dark:text-slate-100 rounded-lg
+                                       focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                       focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                            <option value="ldap" {% if ldap_config and ldap_config.protocol == 'ldap' %}selected{% endif %}>ldap</option>
+                            <option value="ldaps" {% if ldap_config and ldap_config.protocol == 'ldaps' %}selected{% endif %}>ldaps</option>
+                        </select>
+                    </div>
+                </div>
+
+                {# Base DN + Search filter #}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                               data-i18n="admin.ldapBaseDn">Base DN</label>
+                        <input type="text" name="ldap_base_dn"
+                               value="{{ ldap_config.base_dn if ldap_config else '' }}"
+                               placeholder="dc=example,dc=com"
+                               class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                      border border-slate-300 dark:border-slate-700
+                                      text-slate-900 dark:text-slate-100
+                                      rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                      focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                      focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                               data-i18n="admin.ldapSearchFilter">Search filter</label>
+                        <input type="text" name="ldap_search_filter"
+                               value="{{ ldap_config.search_filter if ldap_config else '' }}"
+                               placeholder="(&(objectClass=person)(sAMAccountName={username}))"
+                               class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                      border border-slate-300 dark:border-slate-700
+                                      text-slate-900 dark:text-slate-100
+                                      rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                      focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                      focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1"
+                           data-i18n="admin.ldapSearchFilterHint">Используйте {username} как плейсхолдер. Если оставить пустым, будет использован фильтр по атрибуту Login.</p>
+                    </div>
+                </div>
+
+                {# Bind account #}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                               data-i18n="admin.ldapBindDn">Учётная запись для запросов (Bind DN)</label>
+                        <input type="text" name="ldap_bind_dn"
+                               value="{{ ldap_config.bind_dn if ldap_config else '' }}"
+                               placeholder="cn=admin,dc=example,dc=com"
+                               class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                      border border-slate-300 dark:border-slate-700
+                                      text-slate-900 dark:text-slate-100
+                                      rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                      focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                      focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1"
+                           data-i18n="admin.ldapBindDnHint">Оставьте пустым для анонимного подключения.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                               data-i18n="admin.ldapBindPassword">Пароль учётной записи</label>
+                        <input type="password" name="ldap_bind_password"
+                               placeholder="{% if ldap_config and ldap_config.bind_password %}•••••••• (оставьте пустым, чтобы не менять){% else %}Введите пароль{% endif %}"
+                               class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                      border border-slate-300 dark:border-slate-700
+                                      text-slate-900 dark:text-slate-100
+                                      rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                      focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                      focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                    </div>
+                </div>
+
+                {# Attribute mapping + Timeout #}
+                <div class="pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+                    <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3"
+                        data-i18n="admin.ldapAttributes">Атрибуты и таймаут</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                                   data-i18n="admin.ldapLoginAttr">Логин</label>
+                            <input type="text" name="ldap_login_attr"
+                                   value="{{ ldap_config.login_attr if ldap_config else 'sAMAccountName' }}"
+                                   placeholder="sAMAccountName"
+                                   class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                          border border-slate-300 dark:border-slate-700
+                                          text-slate-900 dark:text-slate-100
+                                          rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Пример: sAMAccountName</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                                   data-i18n="admin.ldapFullnameAttr">ФИО</label>
+                            <input type="text" name="ldap_fullname_attr"
+                                   value="{{ ldap_config.fullname_attr if ldap_config else 'displayName' }}"
+                                   placeholder="displayName"
+                                   class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                          border border-slate-300 dark:border-slate-700
+                                          text-slate-900 dark:text-slate-100
+                                          rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Пример: displayName</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                                   data-i18n="admin.ldapEmailAttr">E-mail</label>
+                            <input type="text" name="ldap_email_attr"
+                                   value="{{ ldap_config.email_attr if ldap_config else 'mail' }}"
+                                   placeholder="mail"
+                                   class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                          border border-slate-300 dark:border-slate-700
+                                          text-slate-900 dark:text-slate-100
+                                          rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Пример: mail</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                                   data-i18n="admin.ldapTimeout">Таймаут (сек)</label>
+                            <input type="number" name="ldap_timeout" min="1" max="60"
+                                   value="{{ ldap_config.timeout if ldap_config else 5 }}"
+                                   class="input w-full px-3 py-2 text-sm bg-white dark:bg-slate-900
+                                          border border-slate-300 dark:border-slate-700
+                                          text-slate-900 dark:text-slate-100
+                                          rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                                          focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                                          focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Пример: 5 сек</p>
+                        </div>
+                    </div>
+                </div>
+
+                {# Buttons row #}
+                <div class="flex flex-wrap items-center gap-2 pt-2">
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 text-xs font-medium
+                                   bg-indigo-600 hover:bg-indigo-500
+                                   text-white px-3.5 py-2 rounded-lg
+                                   shadow-sm hover:shadow transition-all">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <span data-i18n="admin.ldapSave">Сохранить</span>
+                    </button>
+
+                    <button type="button" id="btn-test-ldap"
+                            class="inline-flex items-center gap-1.5 text-xs font-medium
+                                   text-slate-700 dark:text-slate-300
+                                   bg-white dark:bg-slate-800
+                                   hover:bg-slate-50 dark:hover:bg-slate-700
+                                   border border-slate-300 dark:border-slate-600
+                                   px-3.5 py-2 rounded-lg
+                                   transition-colors">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                        <span data-i18n="admin.ldapTestConn">Проверить соединение</span>
+                    </button>
+                </div>
+            </form>
+
+            {# Test result area #}
+            <div id="ldap-test-result" class="hidden mt-4"></div>
+        </div>
+    </div>
+
+    {# ---- User lookup test ---- #}
+    <div class="card bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
+                rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/30
+                border border-slate-200/70 dark:border-slate-800/70 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60">
+            <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200"
+                data-i18n="admin.ldapLookup">Проверка пользователя</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+               data-i18n="admin.ldapLookupHint">Введите логин пользователя, чтобы проверить его наличие в LDAP-каталоге.</p>
+        </div>
+        <div class="px-5 py-4">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="ldap-lookup-username"
+                       placeholder="Введите логин пользователя"
+                       class="input flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-900
+                              border border-slate-300 dark:border-slate-700
+                              text-slate-900 dark:text-slate-100
+                              rounded-lg placeholder:text-slate-400 dark:placeholder:text-slate-500
+                              focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400
+                              focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20">
+                <button type="button" id="btn-lookup-ldap"
+                        class="inline-flex items-center gap-1.5 text-xs font-medium
+                               bg-indigo-600 hover:bg-indigo-500
+                               text-white px-4 py-2 rounded-lg
+                               shadow-sm hover:shadow transition-all shrink-0">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span data-i18n="admin.ldapLookupBtn">Найти</span>
+                </button>
+            </div>
+
+            {# Lookup result area #}
+            <div id="ldap-lookup-result" class="hidden mt-4"></div>
+        </div>
+    </div>
+</div>
+
 {% endif %}
 
 {# ---- Files popover (shared, repositioned on click) ---- #}
@@ -505,6 +827,13 @@
 </div>
 
 <script>
+    // Shared HTML-escape utility
+    function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, function (c) {
+            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+        });
+    }
+
     // Footer text live preview
     (function () {
         var textarea = document.querySelector('textarea[name="footer_text"]');
@@ -582,12 +911,6 @@
             position(trigger);
         }
 
-        function escapeHtml(s) {
-            return s.replace(/[&<>"']/g, function (c) {
-                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
-            });
-        }
-
         // Delegate click events
         document.addEventListener('click', function (e) {
             var trigger = e.target.closest('.files-popover-trigger');
@@ -647,6 +970,161 @@
             document.addEventListener('DOMContentLoaded', bindDeleteUsers);
         } else {
             bindDeleteUsers();
+        }
+    })();
+
+    // LDAP test connection
+    (function () {
+        function bindLdapTest() {
+            var btn = document.getElementById('btn-test-ldap');
+            var resultEl = document.getElementById('ldap-test-result');
+            if (!btn || !resultEl) return;
+
+            btn.addEventListener('click', function () {
+                btn.disabled = true;
+                btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10"/></svg> ' +
+                    (window.I18N ? window.I18N.t('admin.ldapTesting') : 'Testing…');
+
+                resultEl.classList.remove('hidden', 'bg-emerald-50', 'dark:bg-emerald-950/30',
+                    'bg-rose-50', 'dark:bg-rose-950/30',
+                    'border-emerald-200', 'dark:border-emerald-900/50',
+                    'border-rose-200', 'dark:border-rose-900/50',
+                    'text-emerald-800', 'dark:text-emerald-200',
+                    'text-rose-800', 'dark:text-rose-200');
+                resultEl.innerHTML = '';
+
+                var formData = new FormData();
+                fetch('/admin/ldap/test', { method: 'POST', body: formData })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        resultEl.classList.remove('hidden');
+                        resultEl.className += ' p-3.5 rounded-xl border flex items-start gap-3';
+                        if (data.success) {
+                            resultEl.className += ' bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50';
+                            resultEl.innerHTML = '<svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+                                '<p class="text-sm text-emerald-800 dark:text-emerald-200">' + escapeHtml(data.message || 'OK') + '</p>';
+                        } else {
+                            resultEl.className += ' bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/50';
+                            resultEl.innerHTML = '<svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
+                                '<p class="text-sm text-rose-800 dark:text-rose-200">' + escapeHtml(data.error || 'Unknown error') + '</p>';
+                        }
+                    })
+                    .catch(function (err) {
+                        resultEl.classList.remove('hidden');
+                        resultEl.className += ' p-3.5 rounded-xl border flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/50';
+                        resultEl.innerHTML = '<svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
+                            '<p class="text-sm text-rose-800 dark:text-rose-200">' + escapeHtml(String(err)) + '</p>';
+                    })
+                    .finally(function () {
+                        btn.disabled = false;
+                        btn.innerHTML = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> ' +
+                            (window.I18N ? window.I18N.t('admin.ldapTestConn') : 'Test Connection');
+                    });
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bindLdapTest);
+        } else {
+            bindLdapTest();
+        }
+    })();
+
+    // LDAP user lookup
+    (function () {
+        function bindLdapLookup() {
+            var btn = document.getElementById('btn-lookup-ldap');
+            var input = document.getElementById('ldap-lookup-username');
+            var resultEl = document.getElementById('ldap-lookup-result');
+            if (!btn || !input || !resultEl) return;
+
+            function doLookup() {
+                var username = input.value.trim();
+                if (!username) {
+                    resultEl.classList.remove('hidden');
+                    resultEl.className = 'mt-4 p-3.5 rounded-xl border flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50';
+                    resultEl.innerHTML = '<svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+                        '<p class="text-sm text-amber-800 dark:text-amber-200">' + (window.I18N ? window.I18N.t('admin.ldapLookupEmpty') : 'Please enter a username.') + '</p>';
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10"/></svg> ' +
+                    (window.I18N ? window.I18N.t('admin.ldapSearching') : 'Searching…');
+
+                var formData = new FormData();
+                formData.append('ldap_lookup_username', username);
+
+                fetch('/admin/ldap/lookup', { method: 'POST', body: formData })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        resultEl.classList.remove('hidden');
+                        resultEl.className = 'mt-4 rounded-xl border overflow-hidden';
+
+                        if (data.found && data.attributes) {
+                            var attrs = data.attributes;
+                            resultEl.className += ' bg-white/80 dark:bg-slate-900/80 border-slate-200/70 dark:border-slate-800/70';
+                            var html = '<div class="px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center gap-2">' +
+                                '<div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">' +
+                                (attrs.login ? attrs.login[0].toUpperCase() : '?') +
+                                '</div>' +
+                                '<div>' +
+                                '<p class="text-sm font-semibold text-slate-800 dark:text-slate-200">' + escapeHtml(attrs.login || username) + '</p>' +
+                                '<p class="text-[11px] text-slate-500 dark:text-slate-400 mono">' + escapeHtml(attrs.dn || '') + '</p>' +
+                                '</div>' +
+                                '</div>' +
+                                '<div class="px-5 py-3 space-y-2">' +
+                                '<div class="flex items-baseline gap-3"><span class="text-xs font-medium text-slate-500 dark:text-slate-400 w-20 shrink-0">' + (window.I18N ? window.I18N.t('admin.ldapFullnameAttr') : 'Full Name') + '</span><span class="text-sm text-slate-800 dark:text-slate-200 font-medium">' + escapeHtml(attrs.fullname || '—') + '</span></div>' +
+                                '<div class="flex items-baseline gap-3"><span class="text-xs font-medium text-slate-500 dark:text-slate-400 w-20 shrink-0">E-mail</span><span class="text-sm text-slate-800 dark:text-slate-200 mono">' + escapeHtml(attrs.email || '—') + '</span></div>' +
+                                '</div>';
+
+                            // Show all attributes in a collapsible section
+                            if (attrs.all) {
+                                html += '<details class="px-5 py-3 border-t border-slate-200/60 dark:border-slate-800/60"><summary class="text-xs font-medium text-slate-500 dark:text-slate-400 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400">' +
+                                    (window.I18N ? window.I18N.t('admin.ldapAllAttrs') : 'All attributes') +
+                                    '</summary><div class="mt-2 max-h-64 overflow-y-auto">';
+                                var allKeys = Object.keys(attrs.all).sort();
+                                for (var i = 0; i < allKeys.length; i++) {
+                                    var k = allKeys[i];
+                                    var v = attrs.all[k];
+                                    if (Array.isArray(v)) {
+                                        v = v.map(function (x) { return String(x); }).join(', ');
+                                    }
+                                    html += '<div class="flex items-baseline gap-3 py-1 text-xs"><span class="font-medium text-slate-500 dark:text-slate-400 w-44 shrink-0 mono">' + escapeHtml(k) + '</span><span class="text-slate-700 dark:text-slate-300 break-all">' + escapeHtml(String(v)) + '</span></div>';
+                                }
+                                html += '</div></details>';
+                            }
+
+                            resultEl.innerHTML = html;
+                        } else {
+                            resultEl.className += ' bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 p-3.5 flex items-start gap-3';
+                            resultEl.innerHTML = '<svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+                                '<p class="text-sm text-amber-800 dark:text-amber-200">' + escapeHtml(data.error || 'User not found') + '</p>';
+                        }
+                    })
+                    .catch(function (err) {
+                        resultEl.classList.remove('hidden');
+                        resultEl.className = 'mt-4 p-3.5 rounded-xl border flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/50';
+                        resultEl.innerHTML = '<svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
+                            '<p class="text-sm text-rose-800 dark:text-rose-200">' + escapeHtml(String(err)) + '</p>';
+                    })
+                    .finally(function () {
+                        btn.disabled = false;
+                        btn.innerHTML = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> ' +
+                            (window.I18N ? window.I18N.t('admin.ldapLookupBtn') : 'Find');
+                    });
+            }
+
+            btn.addEventListener('click', doLookup);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); doLookup(); }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bindLdapLookup);
+        } else {
+            bindLdapLookup();
         }
     })();
 </script>

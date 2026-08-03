@@ -64,22 +64,89 @@ def verify_password(password_hash: str, plain: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# DB-backed credential matching — used by both session login and HTTP Basic.
+# Credential matching — DB first, then LDAP with auto-provisioning.
+# Used by both session login and HTTP Basic.
 # ---------------------------------------------------------------------------
 async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional["SessionUser"]:
-    """Query the users table and verify credentials. Returns SessionUser or None."""
-    from .models import User
+    """Authenticate via local DB first, then LDAP.
 
+    - Locally-created users (admin, uploader) are validated against their
+      Argon2 hash in the ``users`` table.
+    - LDAP users are always validated against the directory.  On first
+      login they are auto-created with role ``uploader`` and a random
+      placeholder hash.
+    - LDAP users can log in with or without ``@domain`` — the
+      *canonical* login (value of ``login_attr``, e.g. ``sAMAccountName``)
+      is used for the local database record, so the same LDAP principal
+      always maps to a single local user.
+    """
+    from .models import User
+    from .ldap_utils import authenticate_ldap_user, get_ldap_config
+
+    # 1) Check local DB with the raw username.  This catches locally-
+    #    created accounts (admin, uploader from Admin UI) immediately.
     result = await db.execute(select(User).where(User.username == username))
     user = result.scalar_one_or_none()
 
-    if user is None:
+    if user is not None:
+        if verify_password(user.password_hash, password):
+            return SessionUser(username=user.username, role=user.role)
+        # Password mismatch — don't bail out: this could be an LDAP user
+        # with a placeholder hash.  Fall through to LDAP below.
+
+    # 2) Try LDAP (if configured and enabled)
+    ldap_config = await get_ldap_config(db)
+    if not ldap_config.is_enabled:
         return None
 
-    if not verify_password(user.password_hash, password):
+    ldap_result = await authenticate_ldap_user(ldap_config, username, password)
+    if ldap_result is None:
         return None
+
+    # 3) Resolve the canonical login from LDAP attributes.
+    #    This ensures that ``jdoe`` and ``jdoe@contoso.com`` map to the
+    #    same local user record.
+    canonical = ldap_result["canonical_username"]
+
+    # 4) Look up or auto-create the canonical user in the local database.
+    if user is not None and user.username == canonical:
+        # Already looked up — either a pre-existing LDAP user or
+        # the same username was used for both DB and canonical.
+        pass
+    else:
+        result = await db.execute(select(User).where(User.username == canonical))
+        user = result.scalar_one_or_none()
+
+    if user is None:
+        try:
+            user = User(
+                username=canonical,
+                password_hash=hash_password(_generate_placeholder_password()),
+                role="uploader",
+            )
+            db.add(user)
+            await db.commit()
+            logger.info(
+                "Auto-created LDAP user %s (fullname: %s, email: %s)",
+                canonical,
+                ldap_result.get("fullname", ""),
+                ldap_result.get("email", ""),
+            )
+        except Exception:
+            await db.rollback()
+            result = await db.execute(select(User).where(User.username == canonical))
+            user = result.scalar_one_or_none()
+            if user is None:
+                logger.error("Failed to auto-create LDAP user %s", canonical)
+                return None
 
     return SessionUser(username=user.username, role=user.role)
+
+
+def _generate_placeholder_password() -> str:
+    """Generate a cryptographically random placeholder password for LDAP users."""
+    import secrets as _secrets
+    return _secrets.token_urlsafe(48)
 
 
 # ---------------------------------------------------------------------------
