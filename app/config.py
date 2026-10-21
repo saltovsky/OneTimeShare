@@ -42,12 +42,14 @@ class Settings:
     # Limits
     MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", str(100 * 1024 * 1024)))     # 100 MB
     MAX_TOTAL_SIZE: int = int(os.getenv("MAX_TOTAL_SIZE", str(500 * 1024 * 1024)))   # 500 MB
+    MAX_FILES_PER_UPLOAD: int = int(os.getenv("MAX_FILES_PER_UPLOAD", "100"))
 
     # Streaming
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", str(64 * 1024)))   # 64 KB
-    # Multipart uploads have already been spooled by Starlette when the route
-    # handler runs. Use a larger buffer for the one remaining copy into the
-    # permanent storage, without increasing download-stream memory usage.
+    # Uploads are written to their final location while the request body is
+    # still arriving. This is the buffer accumulated in memory before a write
+    # is handed to the worker thread: larger = fewer syscalls/thread hops,
+    # at the cost of more per-request memory for concurrent uploads.
     UPLOAD_CHUNK_SIZE: int = int(os.getenv("UPLOAD_CHUNK_SIZE", str(1024 * 1024)))  # 1 MB
 
     # Background cleanup
